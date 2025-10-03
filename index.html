@@ -1,0 +1,370 @@
+<!doctype html>
+
+<html lang="id">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Kalkulator Kuadrat — Step by Step</title>  <!-- KaTeX (render math) -->  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.8/dist/katex.min.css">
+  <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.8/dist/katex.min.js"></script>  <!-- math.js (perhitungan, termasuk bilangan kompleks) -->  <script src="https://cdn.jsdelivr.net/npm/mathjs@11.11.0/lib/browser/math.js"></script>  <style>
+    :root{--bg:black;--card:#858585;--muted:white;--accent:white}
+    body{font-family:Inter, system-ui, -apple-system, 'Segoe UI', Roboto, Arial; background:var(--bg); color:var(--accent); padding:28px}
+    .wrap{max-width:920px;margin:0 auto}
+   
+    h1{margin:0 0 8px;font-size:20px}
+    label{display:inline-block;margin-right:12px;color:var(--muted)}
+    input[type=number]{width:100px;padding:8px;border-radius:8px;border:1px solid #e6eef6;margin-right:8px}
+    button{padding:8px 12px;border-radius:8px;border:none;background:#111827;color:white;cursor:pointer}
+    .grid{display:grid;grid-template-columns:1fr 380px;gap:18px;margin-top:14px}
+    .box{background:black;padding:12px;border-radius:10px;border:1px dashed #e6edf3;min-height:120px}
+    .label{font-size:13px;color:white;margin-bottom:8px}
+    pre{white-space:pre-wrap;font-family:inherit}
+    .small{font-size:13px;color:var(--muted)}
+    .steps{display:flex;flex-direction:column;gap:100px}
+    .result-number{font-weight:700;font-size:16px}
+    .muted-red{color:#b91c1c}
+    .footer{margin-top:12px;font-size:13px;color:var(--muted)}
+  </style></head>
+<body>
+  <div class="wrap">
+    <div class="card">
+      <h1>🧮 Kalkulator Persamaan Kuadrat.</h1>
+      <div class="small">Masukkan <code>a</code>, <code>b</code>, <code>c</code> lalu klik <b>Hitung</b>. Hasil akan menampilkan rumus yang disubstitusi, langkah perhitungan diskriminan, bentuk akar (radikal) dan nilai akhir (termasuk bilangan kompleks jika D &lt; 0).</div><div style="margin-top:12px"><br>
+          <h1 style="color:#00ff03;" >Masukkan nilai a, b, c</h1>
+    <label>a: <input id="a" type="number" step="any" value="1"></label><br><br>
+    <label>b: <input id="b" type="number" step="any" value="-4"></label><br><br>
+    <label>c: <input id="c" type="number" step="any" value="-5"></label><br><br>
+    <button id="calcBtn">Hitung</button>
+    <button id="copyLatex" style="margin-left:8px">Salin LaTeX</button>
+  </div>
+<br>
+ <br>
+    <div>
+      <div class="label">Rumus Umum (eksak)</div>
+      <div id="formula" class="box"></div>
+
+      <div class="label" style="margin-top:10px">Langkah-langkah</div>
+      <div id="steps" class="box steps"></div>
+    </div>
+<br><br>
+    <div>
+      <div class="label">Substitusi (tampilan LaTeX)</div>
+      <div id="substitution" class="box"></div>
+
+      <div class="label" style="margin-top:10px">Hasil Akhir</div>
+      <div id="resultBox" class="box">
+        <div id="roots" style="margin-bottom:8px"></div>
+        <div id="decimalRoots" class="small"></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="footer">Catatan: sistem otomatis menampilkan bentuk eksak (radikal) dan aproksimasi desimal. Jika <code>a</code> = 0, akan dianggap persamaan linear.</div>
+</div>
+
+  </div>  <script>
+    // Utility: format number nicely
+    function fmt(n, digits=6){
+      if (typeof n === 'number' && Number.isFinite(n)){
+        if (Math.abs(n - Math.round(n)) < 1e-12) return String(Math.round(n));
+        return Number(n.toFixed(digits)).toString();
+      }
+      // math.js complex
+      return String(n);
+    }
+
+    function gcd(a,b){
+      a = Math.abs(a); b = Math.abs(b);
+      if (!b) return a;
+      return gcd(b, a % b);
+    }
+
+    // simplify sqrt for integer n >= 0: find k,m such that n = k^2 * m, m square-free
+    function simplifySqrtInt(n){
+      n = Math.abs(Math.round(n));
+      if (n === 0) return {out:0, in:1};
+      let best = {out:1, in:n};
+      for (let k = Math.floor(Math.sqrt(n)); k >= 2; k--) {
+        const sq = k*k;
+        if (n % sq === 0){ best.out = k; best.in = n / sq; break; }
+      }
+      return best;
+    }
+
+    function renderKatex(el, latex, displayMode=false){
+      try{
+        katex.render(latex, el, {throwOnError:false, displayMode:displayMode});
+      }catch(e){ el.textContent = latex; }
+    }
+
+    const formulaEl = document.getElementById('formula');
+    const substitutionEl = document.getElementById('substitution');
+    const stepsEl = document.getElementById('steps');
+    const rootsEl = document.getElementById('roots');
+    const decimalRootsEl = document.getElementById('decimalRoots');
+
+    // render general formula once
+    renderKatex(formulaEl,         '\\displaystyle x = \\frac{-b \\pm \\sqrt{b^2 - 4ac}}{2a}', true);        
+
+    function solve(){
+      const a = parseFloat(document.getElementById('a').value);
+      const b = parseFloat(document.getElementById('b').value);
+      const c = parseFloat(document.getElementById('c').value);
+
+      stepsEl.innerHTML = '';
+      rootsEl.innerHTML = '';
+      decimalRootsEl.textContent = '';
+
+      if (isNaN(a) || isNaN(b) || isNaN(c)){
+        stepsEl.textContent = 'Masukkan nilai a, b, c yang valid.'; return;
+      }
+
+      // handle linear / degenerate cases
+      if (Math.abs(a) < 1e-12){
+        // bx + c = 0
+        if (Math.abs(b) < 1e-12){
+          stepsEl.textContent = (Math.abs(c) < 1e-12) ? 'Identitas: semua x memenuhi (0=0).' : 'Tak ada solusi (kontradiksi).';
+          substitutionEl.innerHTML = '';
+          rootsEl.innerHTML = '';
+          return;
+        }
+        const root = -c / b;
+        renderKatex(substitutionEl, `x = -\\dfrac{c}{b} = -\\dfrac{(${c})}{(${b})} = ${fmt(root)}`);
+        renderKatex(rootsEl, `x = ${fmt(root)}`);
+        decimalRootsEl.textContent = `≈ ${fmt(root,8)}`;
+        return;
+      }
+
+      // Build substitution LaTeX
+      const aTex = `(${fmt(a)})`, bTex = `(${fmt(b)})`, cTex = `(${fmt(c)})`;
+      const subsLatex = `x = \\frac{-${bTex} \\pm \\sqrt{${bTex}^2 - 4${aTex}${cTex}}}{2${aTex}}`;
+      renderKatex(substitutionEl, subsLatex, false);
+
+      
+      // Step 1: identifikasi
+const step1 = document.createElement('div');
+renderKatex(step1, `
+  \\text{1) Identifikasi:} \\\\[6pt]
+  \\begin{aligned}
+    a &= ${aTex} \\\\[4pt]
+    b &= ${bTex} \\\\[4pt]
+    c &= ${cTex}
+  \\end{aligned}
+`);
+stepsEl.appendChild(step1);
+
+// Step 2: diskriminan (bentuk eksak, step by step)
+const b2 = math.pow(b, 2);
+const fourac = 4 * a * c;
+const D = math.subtract(b2, fourac);
+
+const step2 = document.createElement('div');
+
+renderKatex(step2, `
+  \\text{2) Diskriminan (eksak):} \\\\[10pt]
+  \\begin{aligned}
+    \\Delta &= b^2 - 4ac \\\\
+           &= (${fmt(b)})^2 - 4(${fmt(a)})(${fmt(c)}) \\\\
+           &= ${fmt(b2)} ${fourac >= 0 ? '-' : '+'} ${Math.abs(fourac)} \\\\
+           &= ${fmt(D)}
+  \\end{aligned}
+`);
+
+stepsEl.appendChild(step2);
+
+      // Step 3: akar diskriminan
+const step3 = document.createElement('div');
+
+if (D === 0) {
+  // kalau diskriminan = 0
+  renderKatex(step3, `
+    \\text{3) Akar diskriminan:} \\\\[8pt]
+    \\begin{aligned}
+      \\sqrt{\\Delta} &= \\sqrt{0} \\\\[6pt]
+                      &= 0
+    \\end{aligned}
+  `);
+  
+} else if (D > 0 && Math.abs(Math.round(D) - D) < 1e-12) {
+  // positif & bulat → bisa disederhanakan
+  const N = Math.round(D);
+  const s = simplifySqrtInt(N);
+  let sqrtLatex;
+  if (s.in === 1) {
+    sqrtLatex = `${s.out}`;
+  } else {
+    sqrtLatex = `${s.out === 1 ? '' : s.out}\\sqrt{${s.in}}`;
+  }
+  renderKatex(step3, `
+    \\text{3) Akar diskriminan:} \\\\[8pt]
+    \\begin{aligned}
+      \\sqrt{\\Delta} &= \\sqrt{${N}} \\\\[6pt]
+                      &= ${sqrtLatex}
+    \\end{aligned}
+  `);
+
+} else if (D > 0) {
+  // positif tapi bukan kuadrat sempurna
+  renderKatex(step3, `
+    \\text{3) Akar diskriminan:} \\\\[8pt]
+    \\begin{aligned}
+      \\sqrt{\\Delta} &= \\sqrt{${fmt(D)}} \\\\[6pt]
+                      &\\approx ${fmt(Math.sqrt(D),8)}
+    \\end{aligned}
+  `);
+
+} else { 
+  // D < 0 → akar imajiner
+  const absD = Math.abs(D);
+  const s = (Math.abs(Math.round(absD) - absD) < 1e-12) ? simplifySqrtInt(Math.round(absD)) : null;
+  let sqrtLatex;
+  if (s) {
+    sqrtLatex = (s.in === 1) ? `${s.out}` : `${s.out === 1 ? '' : s.out}\\sqrt{${s.in}}`;
+    sqrtLatex = `${sqrtLatex}i`;
+  } else {
+    sqrtLatex = `i\\sqrt{${fmt(absD)}}`;
+  }
+
+  renderKatex(step3, `
+    \\text{3) Akar diskriminan:} \\\\[8pt]
+    \\begin{aligned}
+      \\sqrt{\\Delta} &= \\sqrt{${fmt(D)}} \\\\[6pt]
+                      &= ${sqrtLatex}
+    \\end{aligned}
+  `);
+}
+
+stepsEl.appendChild(step3);
+
+
+      // Step 4: bentuk akar (ekspresi eksak)
+const step4 = document.createElement('div');
+const twoa = 2 * a;
+let exactLatex;
+
+if (D >= 0) {
+  // real case
+  exactLatex = `
+    \\begin{aligned}
+      x &= \\dfrac{-${bTex} \\pm \\sqrt{${fmt(D)}}}{${fmt(twoa)}}
+    \\end{aligned}
+  `;
+} else {
+  // complex case
+  exactLatex = `
+    \\begin{aligned}
+      x &= \\dfrac{-${bTex} \\pm i\\sqrt{${fmt(Math.abs(D))}}}{${fmt(twoa)}}
+    \\end{aligned}
+  `;
+}
+
+renderKatex(step4, `
+  \\text{4) Bentuk eksak:} \\\\[8pt]
+  ${exactLatex}
+`);
+stepsEl.appendChild(step4);
+
+      // Step 5: hitung nilai numeric (dua akar jika +-)
+      const step5 = document.createElement('div');
+
+      try{
+        if (D >= 0){
+          const sqrtDnum = Math.sqrt(D);
+          const numPlus = -b + sqrtDnum;
+          const numMinus = -b - sqrtDnum;
+          const x1 = numPlus / (2*a);
+          const x2 = numMinus / (2*a);
+
+          // if sqrtD is integer we can try to reduce fractions
+          let fractionLatex = '';
+          if (Math.abs(Math.round(sqrtDnum) - sqrtDnum) < 1e-12){
+            const sINT = Math.round(sqrtDnum);
+            const numer1 = -b + sINT; const numer2 = -b - sINT; const den = twoa;
+            const g1 = gcd(numer1, den); const g2 = gcd(numer2, den);
+            const f1 = `\\dfrac{${numer1/g1}}{${den/g1}}`;
+const f2 = `\\dfrac{${numer2/g2}}{${den/g2}}`;
+
+fractionLatex = `
+  \\text{bentuk pecahan sederhana:} \\\\[6pt]
+  \\begin{aligned}
+    x_1 &= ${f1} \\\\[8pt]
+    x_2 &= ${f2}
+  \\end{aligned}
+`;
+          }
+
+          renderKatex(step5, `
+  \\text{5) Hitung numerik:} \\\\[10pt]
+  x_1 = \\dfrac{-${fmt(b)} + \\sqrt{${fmt(D)}}}{${fmt(twoa)}} = ${fmt(x1,8)} \\\\
+  x_2 = \\dfrac{-${fmt(b)} - \\sqrt{${fmt(D)}}}{${fmt(twoa)}} = ${fmt(x2,8)}
+  ${fractionLatex ? '\\\\[20pt] ' + fractionLatex : ''}
+`);
+
+          stepsEl.appendChild(step5);
+
+          // show final roots both exact and decimal
+           // show final roots both exact and decimal
+renderKatex(rootsEl, `
+  \\text{Akar persamaan:} \\\\[8pt]
+  \\begin{aligned}
+    x &= \\dfrac{-${bTex} \\pm \\sqrt{${fmt(D)}}}{${fmt(twoa)}} \\\\[6pt]
+      &= \\begin{cases}
+            x_1 \\approx ${fmt(x1,8)} \\\\[4pt]
+            x_2 \\approx ${fmt(x2,8)}
+          \\end{cases}
+  \\end{aligned}
+`);
+decimalRootsEl.textContent = '';
+
+        } else {
+          // complex case
+const sqrtAbs = Math.sqrt(Math.abs(D));
+const realPart = (-b) / (2*a);
+const imagPart = sqrtAbs / (2*a);
+
+renderKatex(step5, `
+  \\text{5) Akar kompleks:} \\\\[8pt]
+  \\begin{aligned}
+    x &= \\dfrac{-${bTex}}{${fmt(twoa)}} \\pm \\dfrac{i\\sqrt{${fmt(Math.abs(D))}}}{${fmt(twoa)}} \\\\[6pt]
+      &= \\begin{cases}
+            x_1 \\approx ${fmt(realPart,8)} ${imagPart>=0?'+':'-'} ${fmt(Math.abs(imagPart),8)}i \\\\[4pt]
+            x_2 \\approx ${fmt(realPart,8)} ${imagPart>=0?'+':'-'} ${fmt(Math.abs(imagPart),8)}i
+          \\end{cases}
+  \\end{aligned}
+`);
+stepsEl.appendChild(step5);
+
+          // numeric approximations
+          const x1 = math.complex(realPart, imagPart);
+          const x2 = math.complex(realPart, -imagPart);
+          renderKatex(rootsEl, `x = \\frac{-${bTex} \\pm i\\sqrt{${fmt(Math.abs(D))}}}{${fmt(twoa)}}`);
+          decimalRootsEl.textContent = `x₁ ≈ ${fmt(x1.re,8)} ${x1.im>=0?'+':'-'} ${fmt(Math.abs(x1.im),8)}i; \n x₂ ≈ ${fmt(x2.re,8)} ${x2.im>=0?'+':'-'} ${fmt(Math.abs(x2.im),8)}i`;
+        }
+      }catch(err){
+        const errDiv = document.createElement('div'); errDiv.className='muted-red'; errDiv.textContent = 'Terjadi kesalahan perhitungan: ' + err.message;
+        stepsEl.appendChild(errDiv);
+      }
+
+      // ensure math rendered (KaTeX is synchronous here)
+    }
+
+    document.getElementById('calcBtn').addEventListener('click', solve);
+    // also update live when pressing Enter inside inputs
+    ['a','b','c'].forEach(id=>{
+      document.getElementById(id).addEventListener('keydown', (e)=>{ if (e.key === 'Enter') solve(); });
+    });
+
+    // copy latex button: copies the exact-expr LaTeX for the substituted formula
+    document.getElementById('copyLatex').addEventListener('click', ()=>{
+      const a = document.getElementById('a').value; const b = document.getElementById('b').value; const c = document.getElementById('c').value;
+      const twoa = 2 * parseFloat(a || 0);
+      const latex = `x = \\frac{-(${b}) \\pm \\sqrt{(${b})^2 - 4(${a})(${c})}}{${twoa}}`;
+      navigator.clipboard.writeText(latex);
+    });
+
+    // initial run
+    solve();
+  </script></body>
+</html>
+
+
+<!-- © 2025 S²D coding || persamaan kuadrat -->
