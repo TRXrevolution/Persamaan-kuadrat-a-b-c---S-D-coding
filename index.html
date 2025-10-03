@@ -7,19 +7,19 @@
   <title>Kalkulator Kuadrat — Step by Step</title>  <!-- KaTeX (render math) -->  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.8/dist/katex.min.css">
   <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.8/dist/katex.min.js"></script>  <!-- math.js (perhitungan, termasuk bilangan kompleks) -->  <script src="https://cdn.jsdelivr.net/npm/mathjs@11.11.0/lib/browser/math.js"></script>  <style>
     :root{--bg:black;--card:#858585;--muted:white;--accent:white}
-    body{font-family:Inter, system-ui, -apple-system, 'Segoe UI', Roboto, Arial; background:var(--bg); color:var(--accent); padding:28px}
+    body{font-family:Inter, system-ui, -apple-system, 'Segoe UI', Roboto, Arial; background:var(--bg); color:var(--accent); padding:10px}
     .wrap{max-width:920px;margin:0 auto}
    
     h1{margin:0 0 8px;font-size:20px}
     label{display:inline-block;margin-right:12px;color:var(--muted)}
-    input[type=number]{width:100px;padding:8px;border-radius:8px;border:1px solid #e6eef6;margin-right:8px}
+    input[type=number]{ background: black; width:100px; padding:8px;border-radius:8px;border:1px solid #00eaff;margin-right:8px; color:white; }
     button{padding:8px 12px;border-radius:8px;border:none;background:#111827;color:white;cursor:pointer}
     .grid{display:grid;grid-template-columns:1fr 380px;gap:18px;margin-top:14px}
     .box{background:black;padding:12px;border-radius:10px;border:1px dashed #e6edf3;min-height:120px}
     .label{font-size:13px;color:white;margin-bottom:8px}
     pre{white-space:pre-wrap;font-family:inherit}
     .small{font-size:13px;color:var(--muted)}
-    .steps{display:flex;flex-direction:column;gap:100px}
+    .steps{display:flex;flex-direction:column;gap:50px}
     .result-number{font-weight:700;font-size:16px}
     .muted-red{color:#b91c1c}
     .footer{margin-top:12px;font-size:13px;color:var(--muted)}
@@ -27,41 +27,62 @@
 <body>
   <div class="wrap">
     <div class="card">
-      <h1>🧮 Kalkulator Persamaan Kuadrat.</h1>
+      <h1 style="color:#00ffff;">🧮 Kalkulator Persamaan Kuadrat.</h1> 
+      <hr style="border: none; border-top: 2px solid #ffffff; margin: 2rem 0;">  
+    <div id="selamatContainer" style="display:flex; align-items:center; justify-content:space-between; width:100%;">
+  <p id="selamatDatang" style="margin:0;"></p>
+  <button id="btnGantiNama">Ganti Nama</button>
+</div>
+
+<div id="formNama" style="display:none; margin-top:8px;">
+  <input type="text" id="inputNama" placeholder="Masukkan nama">
+  <button id="simpanNama">Simpan</button>
+  <div id="errorNama" style="color:red; margin-top:4px; font-size:0.9em;"></div>
+</div>
+
+<hr style="border: none; border-top: 2px solid #ffffff; margin: 2rem 0;">  <br>
       <div class="small">Masukkan <code>a</code>, <code>b</code>, <code>c</code> lalu klik <b>Hitung</b>. Hasil akan menampilkan rumus yang disubstitusi, langkah perhitungan diskriminan, bentuk akar (radikal) dan nilai akhir (termasuk bilangan kompleks jika D &lt; 0).</div><div style="margin-top:12px"><br>
           <h1 style="color:#00ff03;" >Masukkan nilai a, b, c</h1>
     <label>a: <input id="a" type="number" step="any" value="1"></label><br><br>
-    <label>b: <input id="b" type="number" step="any" value="-4"></label><br><br>
-    <label>c: <input id="c" type="number" step="any" value="-5"></label><br><br>
+    <label>b: <input id="b" type="number" step="any" value="5"></label><br><br>
+    <label>c: <input id="c" type="number" step="any" value="-6"></label><br><br>
     <button id="calcBtn">Hitung</button>
     <button id="copyLatex" style="margin-left:8px">Salin LaTeX</button>
   </div>
 <br>
  <br>
     <div>
-      <div class="label">Rumus Umum (eksak)</div>
-      <div id="formula" class="box"></div>
-
+      <div class="label">Rumus Umum (LaTeX)</div>
+     <div id="formula" class="box"></div>
+<br><br>
       <div class="label" style="margin-top:10px">Langkah-langkah</div>
       <div id="steps" class="box steps"></div>
     </div>
-<br><br>
+<br><br><br>
     <div>
       <div class="label">Substitusi (tampilan LaTeX)</div>
       <div id="substitution" class="box"></div>
-
+<br><br>
       <div class="label" style="margin-top:10px">Hasil Akhir</div>
       <div id="resultBox" class="box">
         <div id="roots" style="margin-bottom:8px"></div>
         <div id="decimalRoots" class="small"></div>
       </div>
     </div>
-  </div>
-
-  <div class="footer">Catatan: sistem otomatis menampilkan bentuk eksak (radikal) dan aproksimasi desimal. Jika <code>a</code> = 0, akan dianggap persamaan linear.</div>
+  </div> <br><br>
+  <div class="footer">Catatan:<br><br> sistem otomatis menampilkan bentuk eksak (radikal) dan aproksimasi desimal. Jika <code>a</code> = 0, akan dianggap persamaan linear.</div>
 </div>
 
+<br><br><br><br>
+
+
+<footer>
+  <small style="text-align: center; display: block;color:#484848;"> 2025 S²D coding | hitung persamaan kuadrat • All rights reserved.</small>
+</footer>
+
   </div>  <script>
+      
+  
     // Utility: format number nicely
     function fmt(n, digits=6){
       if (typeof n === 'number' && Number.isFinite(n)){
@@ -102,8 +123,8 @@
     const rootsEl = document.getElementById('roots');
     const decimalRootsEl = document.getElementById('decimalRoots');
 
-    // render general formula once
-    renderKatex(formulaEl,         '\\displaystyle x = \\frac{-b \\pm \\sqrt{b^2 - 4ac}}{2a}', true);        
+       // render general formula once
+    renderKatex(formulaEl, 'x = \\frac{-b \\pm \\sqrt{b^2 - 4ac}}{2a}', true);     
 
     function solve(){
       const a = parseFloat(document.getElementById('a').value);
@@ -128,16 +149,40 @@
           return;
         }
         const root = -c / b;
-        renderKatex(substitutionEl, `x = -\\dfrac{c}{b} = -\\dfrac{(${c})}{(${b})} = ${fmt(root)}`);
+        renderKatex(substitutionEl, `x = -\\dfrac{c}{b} = -\\dfrac{(${c})}{(${b})} = ${fmt(root)}}`);
         renderKatex(rootsEl, `x = ${fmt(root)}`);
         decimalRootsEl.textContent = `≈ ${fmt(root,8)}`;
         return;
       }
 
       // Build substitution LaTeX
-      const aTex = `(${fmt(a)})`, bTex = `(${fmt(b)})`, cTex = `(${fmt(c)})`;
-      const subsLatex = `x = \\frac{-${bTex} \\pm \\sqrt{${bTex}^2 - 4${aTex}${cTex}}}{2${aTex}}`;
-      renderKatex(substitutionEl, subsLatex, false);
+      function texWithParens(n){
+  return n < 0 ? `( ${fmt(n)} )` : fmt(n);
+}
+
+
+
+// buat container Step 0
+const step0 = document.createElement('div');
+step0.id = "step0";
+
+// rumus simbolik
+const step0Latex = `
+\\displaystyle 
+\\text{Rumus umum kuadrat:} \\\\[6pt]
+x = \\frac{-b \\pm \\sqrt{b^2 - 4 \\cdot a \\cdot c}}{2 \\cdot a}
+`;
+
+renderKatex(step0, step0Latex, false);
+
+// append ke steps
+stepsEl.appendChild(step0);
+
+const aTex = texWithParens(a);
+const bTex = texWithParens(b);
+const cTex = texWithParens(c);
+      const subsLatex = `\\displaystyle x = \\frac{-${bTex} \\pm \\sqrt{${bTex}^2 - 4 \\cdot ${aTex} \\cdot ${cTex}}}{2 \\cdot ${aTex}}`;
+renderKatex(substitutionEl, subsLatex, false); 
 
       
       // Step 1: identifikasi
@@ -153,29 +198,34 @@ renderKatex(step1, `
 stepsEl.appendChild(step1);
 
 // Step 2: diskriminan (bentuk eksak, step by step)
-const b2 = math.pow(b, 2);
-const fourac = 4 * a * c;
-const D = math.subtract(b2, fourac);
-
 const step2 = document.createElement('div');
 
+// Hitung bagian-bagian diskriminan
+const b2 = math.pow(b, 2);
+const fourac = 4 * a * c;
+const D = b2 - fourac;
+// Masih bentuk “angka ± angka” di dalam akar
+const deltaLatex = `${fmt(b2)} ${fourac >= 0 ? '-' : '+'} ${Math.abs(fourac)}`;
+
 renderKatex(step2, `
-  \\text{2) Diskriminan (eksak):} \\\\[10pt]
-  \\begin{aligned}
-    \\Delta &= b^2 - 4ac \\\\
-           &= (${fmt(b)})^2 - 4(${fmt(a)})(${fmt(c)}) \\\\
-           &= ${fmt(b2)} ${fourac >= 0 ? '-' : '+'} ${Math.abs(fourac)} \\\\
-           &= ${fmt(D)}
-  \\end{aligned}
-`);
+\\text{2) Substitusi ke rumus kuadrat:} \\\\[20pt]
+\\begin{aligned}
+x &= \\frac{-${bTex} \\pm \\sqrt{${bTex}^2 - 4 \\cdot ${aTex} \\cdot ${cTex}}}{2 \\cdot ${aTex}} \\\\[20pt]
+  &= \\frac{-${bTex} \\pm \\sqrt{${deltaLatex}}}{2 \\cdot ${aTex}} \\\\[20pt]
+  &= \\frac{-${bTex} \\pm \\sqrt{${fmt(D)}}}{2 \\cdot ${aTex}}
+\\end{aligned}
+`, false);
 
 stepsEl.appendChild(step2);
+
 
       // Step 3: akar diskriminan
 const step3 = document.createElement('div');
 
+
 if (D === 0) {
   // kalau diskriminan = 0
+  
   renderKatex(step3, `
     \\text{3) Akar diskriminan:} \\\\[8pt]
     \\begin{aligned}
@@ -194,6 +244,7 @@ if (D === 0) {
   } else {
     sqrtLatex = `${s.out === 1 ? '' : s.out}\\sqrt{${s.in}}`;
   }
+  
   renderKatex(step3, `
     \\text{3) Akar diskriminan:} \\\\[8pt]
     \\begin{aligned}
@@ -240,13 +291,21 @@ stepsEl.appendChild(step3);
 const step4 = document.createElement('div');
 const twoa = 2 * a;
 let exactLatex;
+ const N = Math.round(D);
+  const s = simplifySqrtInt(N);
+  let sqrtLatex;
+  if (s.in === 1) {
+    sqrtLatex = `${s.out}`;
+  } else {
+    sqrtLatex = `${s.out === 1 ? '' : s.out}\\sqrt{${s.in}}`;
+  }
 
 if (D >= 0) {
   // real case
   exactLatex = `
     \\begin{aligned}
-      x &= \\dfrac{-${bTex} \\pm \\sqrt{${fmt(D)}}}{${fmt(twoa)}}
-    \\end{aligned}
+      x &= \\dfrac{-${bTex} \\pm ${sqrtLatex}}{${fmt(twoa)}}
+    \\end{aligned} 
   `;
 } else {
   // complex case
@@ -286,16 +345,16 @@ const f2 = `\\dfrac{${numer2/g2}}{${den/g2}}`;
 fractionLatex = `
   \\text{bentuk pecahan sederhana:} \\\\[6pt]
   \\begin{aligned}
-    x_1 &= ${f1} \\\\[8pt]
-    x_2 &= ${f2}
+    x_1 &= ${f1} =  ${fmt(x1,8)} \\\\[10pt]
+    x_2 &= ${f2} = ${fmt(x2,8)}
   \\end{aligned}
 `;
           }
 
           renderKatex(step5, `
   \\text{5) Hitung numerik:} \\\\[10pt]
-  x_1 = \\dfrac{-${fmt(b)} + \\sqrt{${fmt(D)}}}{${fmt(twoa)}} = ${fmt(x1,8)} \\\\
-  x_2 = \\dfrac{-${fmt(b)} - \\sqrt{${fmt(D)}}}{${fmt(twoa)}} = ${fmt(x2,8)}
+  x_1 = \\dfrac{-${fmt(b)} + ${sqrtLatex}}{${fmt(twoa)}} = ${fmt(x1,8)} \\\\[20pt]
+  x_2 = \\dfrac{-${fmt(b)} - ${sqrtLatex}}{${fmt(twoa)}} = ${fmt(x2,8)}
   ${fractionLatex ? '\\\\[20pt] ' + fractionLatex : ''}
 `);
 
@@ -306,7 +365,7 @@ fractionLatex = `
 renderKatex(rootsEl, `
   \\text{Akar persamaan:} \\\\[8pt]
   \\begin{aligned}
-    x &= \\dfrac{-${bTex} \\pm \\sqrt{${fmt(D)}}}{${fmt(twoa)}} \\\\[6pt]
+    x &= \\dfrac{-${bTex} \\pm \\sqrt{${sqrtLatex}}}{${fmt(twoa)}}       \\\\[9pt]
       &= \\begin{cases}
             x_1 \\approx ${fmt(x1,8)} \\\\[4pt]
             x_2 \\approx ${fmt(x2,8)}
@@ -363,6 +422,73 @@ stepsEl.appendChild(step5);
 
     // initial run
     solve();
+    
+    
+// Ambil elemen
+const selamatDatangEl = document.getElementById("selamatDatang");
+const btnGanti = document.getElementById("btnGantiNama");
+const formNamaEl = document.getElementById("formNama");
+const inputNamaEl = document.getElementById("inputNama");
+const btnSimpan = document.getElementById("simpanNama");
+const errorNamaEl = document.getElementById("errorNama");
+
+const forbiddenWords = ["asu","bangsat","kampang","tolol","goblok","kontol","memek","pepek",
+  "peler","pler","jembut","puki","pukimak","lonte","pelacur",
+  "iblis","dajjal","kampret","brengsek","keparat","penipu",
+  "idiot","bodoh","bego","begok","ndolor","tempek","ngentod"]; 
+
+const MIN_LENGTH = 3;
+const MAX_LENGTH = 20;
+
+let namaUser = localStorage.getItem("gy765ryy6rstu654fuugfse55gj÷€™°|~©©£¢¥%¶∆]\{}[][¥€]]}g76rgjdv)udfhy+6df(ydghg3s)ty75ecg2√¥%6#_((?'d∆÷™'))") || "";
+selamatDatangEl.textContent = `Halo ${namaUser}!`;
+
+btnGanti.addEventListener("click", () => {
+  formNamaEl.style.display = "block";
+  inputNamaEl.value = "";
+  inputNamaEl.focus();
+  errorNamaEl.textContent = "";
+});
+
+btnSimpan.addEventListener("click", () => {
+  const namaBaru = inputNamaEl.value.trim();
+  const lowerNama = namaBaru.toLowerCase();
+
+  // 1. Cek kata kasar
+  if(forbiddenWords.some(word => lowerNama.includes(word))){
+    errorNamaEl.textContent = "Nama mengandung kata yang tidak pantas!";
+    inputNamaEl.focus();
+    return;
+  }
+
+  // 2. Cek panjang nama
+  if(namaBaru.length < MIN_LENGTH){
+    errorNamaEl.textContent = `Nama terlalu pendek (minimal ${MIN_LENGTH} karakter)`;
+    inputNamaEl.focus();
+    return;
+  }
+  if(namaBaru.length > MAX_LENGTH){
+    errorNamaEl.textContent = `Nama terlalu panjang (maksimal ${MAX_LENGTH} karakter)`;
+    inputNamaEl.focus();
+    return;
+  }
+
+  // 3. Cek apakah nama **hanya angka atau simbol/stiker**  
+  // Regex: hanya huruf a-z/A-Z dan spasi
+  if(!/[a-zA-Z]/.test(namaBaru)){
+    errorNamaEl.textContent = "Nama harus mengandung huruf, bukan hanya angka atau simbol/stiker!";
+    inputNamaEl.focus();
+    return;
+  }
+
+  // Jika valid, simpan
+  namaUser = namaBaru;
+  localStorage.setItem("namaUser", namaUser);
+  selamatDatangEl.textContent = `Halo, ${namaUser}!`;
+  formNamaEl.style.display = "none";
+  errorNamaEl.textContent = "";
+});
+  
   </script></body>
 </html>
 
